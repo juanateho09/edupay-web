@@ -7,16 +7,16 @@ import Dashboard from './pages/Dashboard'
 import Movimientos from './pages/Movimientos'
 import Bolsillos from './pages/Bolsillos'
 import Calendario from './pages/Calendario'
+import Presupuestos from './pages/Presupuestos'
+import Metas from './pages/Metas'
+import Deudas from './pages/Deudas'
+import Reportes from './pages/Reportes'
 import { useAuthStore } from './store/authStore'
 
 function ProtectedRoute({ children }) {
   const token = useAuthStore((s) => s.token)
   if (!token) return <Navigate to="/login" replace />
   return children
-}
-
-function PlaceholderPage({ nombre }) {
-  return <p className="text-sm text-[var(--ep-text-sec)]">Página de {nombre} próximamente.</p>
 }
 
 export default function App() {
@@ -51,10 +51,10 @@ export default function App() {
           <Route path="/movimientos" element={<Movimientos />} />
           <Route path="/bolsillos" element={<Bolsillos />} />
           <Route path="/calendario" element={<Calendario />} />
-          <Route path="/presupuestos" element={<PlaceholderPage nombre="Presupuestos" />} />
-          <Route path="/metas" element={<PlaceholderPage nombre="Metas" />} />
-          <Route path="/deudas" element={<PlaceholderPage nombre="Deudas" />} />
-          <Route path="/reportes" element={<PlaceholderPage nombre="Reportes" />} />
+          <Route path="/presupuestos" element={<Presupuestos />} />
+          <Route path="/metas" element={<Metas />} />
+          <Route path="/deudas" element={<Deudas />} />
+          <Route path="/reportes" element={<Reportes />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
