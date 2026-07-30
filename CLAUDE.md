@@ -20,10 +20,9 @@ sembrar datos de prueba.
 
 ## Estado actual
 
-Completado y aprobado: estructura base, tema claro/oscuro, autenticación, layout
-(Sidebar/Topbar), Dashboard, y Movimientos. Las demás páginas (Bolsillos, Calendario,
-Presupuestos, Metas, Deudas, Reportes) están pendientes — hay rutas placeholder en `App.jsx`.
-No avanzar a la siguiente página sin confirmación explícita del usuario.
+Completado y aprobado: las 9 páginas — estructura base, tema claro/oscuro, autenticación,
+layout (Sidebar/Topbar), Dashboard, Movimientos, Bolsillos, Calendario, Presupuestos, Metas,
+Deudas y Reportes. No quedan rutas placeholder en `App.jsx`.
 
 ## Contrato real del backend (verificado con curl, no asumido)
 
@@ -63,6 +62,25 @@ No avanzar a la siguiente página sin confirmación explícita del usuario.
   - `GET /movimientos/buscar?q=` no admite combinarse con los demás filtros (tipo/estado/mes/etc);
     cuando hay texto de búsqueda, se usa ese endpoint en vez de `GET /movimientos`.
   - `GET /movimientos/exportar` requiere `mes` y `anio` (no exporta "todo" sin ellos).
+- `GET /presupuestos?mes&anio` devuelve `estado` ya calculado server-side:
+  `'OK' | 'ALERTA' | 'EXCEDIDO'` (umbral EXCEDIDO es `> 100`, no `>= 100`). `PUT /presupuestos/:id`
+  solo acepta `{ limite }` — `categoria_id`, `mes` y `anio` son inmutables tras la creación.
+- `GET /metas` trae el join contra `bolsillos` ya resuelto: `bolsillo_nombre`, `saldo_actual` y
+  los campos derivados `porcentaje_logrado`, `monto_faltante`, `completada` — no hace falta cruzar
+  con `GET /bolsillos` salvo para poblar el select del modal de creación. `PUT /metas/:id` solo
+  acepta `nombre` y `monto_objetivo`; `bolsillo_id` es inmutable tras la creación.
+- `GET /deudas` soporta `?pagada=true|false` server-side (el filtro todas/pendientes/pagadas de
+  la UI usa este query param, no filtra client-side). `PUT /deudas/:id` rechaza con 400 editar una
+  deuda con `pagada=true` (el botón "Editar" se oculta en deudas pagadas); `tipo` sí es editable
+  junto con el resto de campos. `PATCH /deudas/:id/pagar` marca la deuda como pagada.
+- `GET /reportes/categorias?mes&anio` devuelve
+  `{ ingresos: [{categoria_id, nombre, total, porcentaje_del_total}], gastos: [...] }`, ya
+  ordenado `DESC` por `total`.
+- `GET /reportes/mensual?mes&anio` devuelve
+  `{ balance, por_categoria: {ingresos, gastos}, presupuestos, metas, top_gastos: [...],
+  comparacion_mes_anterior: {ingresos_mes_anterior, gastos_mes_anterior, variacion_ingresos_pct,
+  variacion_gastos_pct} }`. Las `variacion_*_pct` pueden venir `null` cuando el mes anterior fue 0.
+- `GET /reportes/bolsillos` devuelve `[{id, nombre, saldo, porcentaje_del_total}]`.
 
 ## Convenciones del proyecto
 

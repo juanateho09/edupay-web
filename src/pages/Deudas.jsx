@@ -126,6 +126,86 @@ function ModalDeuda({ open, onClose, deuda, tipoInicial, onGuardado }) {
   )
 }
 
+function ModalPagarLeDebo({ open, onClose, deuda, onPagado }) {
+  const [bolsillos, setBolsillos] = useState([])
+  const [cargandoBolsillos, setCargandoBolsillos] = useState(false)
+  const [bolsilloId, setBolsilloId] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!open) return
+    setBolsilloId('')
+    setError('')
+    setCargandoBolsillos(true)
+    api
+      .get('/bolsillos')
+      .then(({ data }) => setBolsillos(data ?? []))
+      .catch(() => setError('No se pudieron cargar los bolsillos'))
+      .finally(() => setCargandoBolsillos(false))
+  }, [open])
+
+  if (!deuda) return null
+
+  const confirmar = async () => {
+    if (!bolsilloId) {
+      setError('Selecciona un bolsillo para pagar la deuda')
+      return
+    }
+    setEnviando(true)
+    setError('')
+    try {
+      await api.patch(`/deudas/${deuda.id}/pagar`, { bolsillo_id: bolsilloId })
+      const bolsillo = bolsillos.find((b) => b.id === bolsilloId)
+      onPagado(bolsillo?.nombre || 'el bolsillo seleccionado')
+    } catch (err) {
+      setError(err.response?.data?.error || 'No se pudo marcar la deuda como pagada')
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Confirmar pago de deuda"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button variant="primary" loading={enviando} onClick={confirmar}>Confirmar pago</Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        {error && <Alert type="error" message={error} onClose={() => setError('')} />}
+
+        <p className="text-sm text-[var(--ep-text-sec)]">
+          Vas a pagar <span className="font-semibold text-[var(--ep-text)]">{formatCOP(deuda.monto)}</span> a{' '}
+          <span className="font-semibold text-[var(--ep-text)]">{deuda.persona}</span>.
+        </p>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-[var(--ep-text)]">Pagar desde el bolsillo</label>
+          <select
+            value={bolsilloId}
+            onChange={(e) => setBolsilloId(e.target.value)}
+            className={SELECT_CLASS}
+            disabled={cargandoBolsillos}
+          >
+            <option value="">Selecciona un bolsillo</option>
+            {bolsillos.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.nombre} ({formatCOP(b.saldo)})
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
 function ColumnaDeudas({ titulo, deudas, onEditar, onEliminar, onPagar, confirmandoEliminar, setConfirmandoEliminar }) {
   return (
     <div className="flex flex-col gap-3">
@@ -163,7 +243,7 @@ function ColumnaDeudas({ titulo, deudas, onEditar, onEliminar, onPagar, confirma
           ) : (
             <div className="mt-3 flex flex-col gap-2">
               {!d.pagada && (
-                <Button variant="primary" size="sm" onClick={() => onPagar(d.id)}>
+                <Button variant="primary" size="sm" onClick={() => onPagar(d)}>
                   <CheckCircle2 size={14} />
                   Marcar como pagada
                 </Button>
@@ -201,6 +281,8 @@ export default function Deudas() {
   const [modalNuevo, setModalNuevo] = useState(false)
   const [deudaEditar, setDeudaEditar] = useState(null)
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(null)
+  const [deudaPagar, setDeudaPagar] = useState(null)
+  const [mensajeExito, setMensajeExito] = useState('')
 
   const cargarDeudas = useCallback(async () => {
     setCargando(true)
@@ -235,14 +317,25 @@ export default function Deudas() {
     }
   }
 
-  const pagar = async (id) => {
+  const pagar = async (deuda) => {
+    if (deuda.tipo === 'LE_DEBO') {
+      setDeudaPagar(deuda)
+      return
+    }
     setError('')
     try {
-      await api.patch(`/deudas/${id}/pagar`)
+      await api.patch(`/deudas/${deuda.id}/pagar`)
       cargarDeudas()
     } catch (err) {
       setError(err.response?.data?.error || 'No se pudo marcar la deuda como pagada')
     }
+  }
+
+  const handlePagado = (nombreBolsillo) => {
+    const monto = deudaPagar?.monto
+    setDeudaPagar(null)
+    cargarDeudas()
+    setMensajeExito(`Deuda pagada. Se registró un gasto de ${formatCOP(monto)} en ${nombreBolsillo}`)
   }
 
   const meDeuden = deudas.filter((d) => d.tipo === 'ME_DEBEN')
@@ -251,6 +344,7 @@ export default function Deudas() {
   return (
     <div className="flex flex-col gap-4">
       {error && <Alert type="error" message={error} onClose={() => setError('')} />}
+      {mensajeExito && <Alert type="success" message={mensajeExito} onClose={() => setMensajeExito('')} />}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-[var(--ep-text)]">Tus deudas</h2>
@@ -302,6 +396,13 @@ export default function Deudas() {
         }}
         deuda={deudaEditar}
         onGuardado={cargarDeudas}
+      />
+
+      <ModalPagarLeDebo
+        open={Boolean(deudaPagar)}
+        onClose={() => setDeudaPagar(null)}
+        deuda={deudaPagar}
+        onPagado={handlePagado}
       />
     </div>
   )
