@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowUpRight, ArrowDownRight, Pencil, Trash2, Check, X, Download, Plus } from 'lucide-react'
+import { ArrowUpRight, ArrowDownRight, Pencil, Trash2, Check, X, Download, Plus, Tags } from 'lucide-react'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Badge from '../components/ui/Badge'
 import Alert from '../components/ui/Alert'
 import ModalMovimiento from '../components/movimientos/ModalMovimiento'
+import ModalCategorias from '../components/movimientos/ModalCategorias'
 import api from '../api/axios'
 import { useMesStore } from '../store/mesStore'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
@@ -39,6 +40,7 @@ export default function Movimientos() {
   const busquedaDebounced = useDebouncedValue(busqueda, 400)
 
   const [modal, setModal] = useState(null)
+  const [modalCategorias, setModalCategorias] = useState(false)
 
   const cargarCatalogos = useCallback(async () => {
     try {
@@ -153,6 +155,10 @@ export default function Movimientos() {
           <Button variant="secondary" size="sm" onClick={() => setModal({ tipo: 'GASTO' })}>
             <Plus size={16} />
             Nuevo gasto
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setModalCategorias(true)}>
+            <Tags size={16} />
+            Gestionar categorías
           </Button>
         </div>
         <Button variant="ghost" size="sm" loading={exportando} onClick={exportar}>
@@ -324,6 +330,13 @@ export default function Movimientos() {
           cargarMovimientos()
           window.dispatchEvent(new CustomEvent('ep:movimiento-creado'))
         }}
+      />
+
+      <ModalCategorias
+        open={modalCategorias}
+        onClose={() => setModalCategorias(false)}
+        categorias={categorias}
+        onActualizado={cargarCatalogos}
       />
     </div>
   )
