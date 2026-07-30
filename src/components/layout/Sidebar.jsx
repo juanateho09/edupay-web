@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   ArrowLeftRight,
@@ -13,8 +13,11 @@ import {
   ChevronRight,
   Sun,
   Moon,
+  User,
+  LogOut,
 } from 'lucide-react'
 import { useThemeStore } from '../../store/themeStore'
+import { useAuthStore } from '../../store/authStore'
 
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -32,6 +35,13 @@ const NAV_ITEMS = [
 export default function Sidebar() {
   const [colapsado, setColapsado] = useState(false)
   const { tema, toggleTema } = useThemeStore()
+  const logout = useAuthStore((s) => s.logout)
+  const navigate = useNavigate()
+
+  const cerrarSesion = () => {
+    logout()
+    navigate('/login')
+  }
 
   return (
     <aside
@@ -86,12 +96,31 @@ export default function Sidebar() {
       </nav>
 
       <div className="border-t border-white/10 px-2 py-3">
+        <NavLink
+          to="/perfil"
+          className={({ isActive }) =>
+            `mb-1 flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition
+            ${isActive ? 'bg-[var(--ep-teal)] text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'}`
+          }
+        >
+          <User size={18} className="shrink-0" />
+          {!colapsado && <span className="whitespace-nowrap">Perfil</span>}
+        </NavLink>
+
         <button
           onClick={toggleTema}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white"
         >
           {tema === 'light' ? <Moon size={18} className="shrink-0" /> : <Sun size={18} className="shrink-0" />}
           {!colapsado && <span className="whitespace-nowrap">Modo {tema === 'light' ? 'oscuro' : 'claro'}</span>}
+        </button>
+
+        <button
+          onClick={cerrarSesion}
+          className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-red-400"
+        >
+          <LogOut size={18} className="shrink-0" />
+          {!colapsado && <span className="whitespace-nowrap">Cerrar sesión</span>}
         </button>
       </div>
     </aside>

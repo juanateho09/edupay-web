@@ -11,6 +11,7 @@ import Presupuestos from './pages/Presupuestos'
 import Metas from './pages/Metas'
 import Deudas from './pages/Deudas'
 import Reportes from './pages/Reportes'
+import Perfil from './pages/Perfil'
 import { useAuthStore } from './store/authStore'
 
 function ProtectedRoute({ children }) {
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="/metas" element={<Metas />} />
           <Route path="/deudas" element={<Deudas />} />
           <Route path="/reportes" element={<Reportes />} />
+          <Route path="/perfil" element={<Perfil />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
